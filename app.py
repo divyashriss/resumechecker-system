@@ -1,49 +1,45 @@
-# app.py - main Streamlit app (drop into repo root)
 import streamlit as st
 import pandas as pd
 import os
-from extractor import read_pdf, extract_skills, clean_text, SKILL_SET
+from extractor import read_pdf, read_docx, extract_skills, clean_text, SKILL_SET
+from parser import parse_jd
 from scorer import score_resume
 from feedback import generate_feedback
-import matplotlib.pyplot as plt
+from requirement import get_requirements
 
+st.set_page_config(page_title="Resume Relevance Checker", layout="wide")
+st.title("🚀 Resume Relevance Checker - Placement Dashboard")
 
-st.set_page_config(page_title="Resume Relevance - Pro", layout="wide")
-st.title("🚀 Resume Relevance Checker")
-
-# --- UI: choose mode ---
+# --- Mode selection ---
 mode = st.radio("Mode", ["Upload JD & Resumes", "Auto-scan sample_data (local)"])
 
-# optional: let user override core skill weights
+# --- Sidebar: skill weights ---
+st.sidebar.header("Adjust Skill Weights (optional)")
 default_weights = {
     "python": 2.5, "sql": 2.0, "pandas": 1.5, "numpy": 1.2,
     "power bi": 1.5, "tableau": 1.5, "machine learning": 2.0, "nlp": 2.0,
     "spark": 1.5, "pyspark": 1.5
 }
-
-st.sidebar.header("Adjust Skill Weights (optional)")
 weights = {}
 for k,v in default_weights.items():
-    val = st.sidebar.number_input(k, min_value=0.0, max_value=5.0, value=float(v), step=0.1)
-    weights[k] = val
+    weights[k] = st.sidebar.number_input(k, min_value=0.0, max_value=5.0, value=float(v), step=0.1)
 
-# Uploader or auto-scan
+# --- JD & Resume Upload ---
 if mode == "Upload JD & Resumes":
-    jd_file = st.file_uploader("Upload JD (PDF)", type=["pdf"])
-    resumes = st.file_uploader("Upload resumes (PDF) — multiple", type=["pdf"], accept_multiple_files=True)
+    jd_file = st.file_uploader("Upload Job Description (PDF/DOCX)", type=["pdf","docx"])
+    resumes = st.file_uploader("Upload resumes (PDF/DOCX) — multiple", type=["pdf","docx"], accept_multiple_files=True)
 else:
-    # Look for sample_data folder in repo root
+    # Auto scan local folder
     sample_folder = "sample_data"
     jd_file = None
     resumes = []
     if os.path.isdir(sample_folder):
-        # JDs -> files with jd in name
-        jd_files = [os.path.join(sample_folder,f) for f in os.listdir(sample_folder) if f.lower().startswith("jd") and f.lower().endswith(".pdf")]
-        resume_files = [os.path.join(sample_folder,f) for f in os.listdir(sample_folder) if f.lower().startswith("resume") and f.lower().endswith(".pdf")]
-        if jd_files:
-            jd_file = jd_files[0]
+        jd_files = [os.path.join(sample_folder,f) for f in os.listdir(sample_folder) if f.lower().startswith("jd")]
+        resume_files = [os.path.join(sample_folder,f) for f in os.listdir(sample_folder) if f.lower().startswith("resume")]
+        jd_file = jd_files[0] if jd_files else None
         resumes = resume_files
 
+# --- Run evaluation ---
 if st.button("Evaluate ▶️"):
     if not jd_file:
         st.error("No JD detected. Upload JD or ensure sample_data/jd*.pdf exists.")
@@ -52,27 +48,24 @@ if st.button("Evaluate ▶️"):
         st.error("No resumes found. Upload or add sample_data/resume*.pdf")
         st.stop()
 
-    # Read JD text and extract skills
-    jd_text = read_pdf(jd_file)
-    jd_skills = extract_skills(jd_text, skill_list=SKILL_SET)
-    if not jd_skills:
-        # fallback: use SKILL_SET intersection with JD text tokens
-        jd_lower = clean_text(jd_text)
-        jd_skills = [s for s in SKILL_SET if s in jd_lower]
+    # Read JD and extract text
+    jd_text = read_pdf(jd_file) if jd_file.name.endswith(".pdf") else read_docx(jd_file)
+    requirements = parse_jd(jd_text)
+    jd_skills = requirements['must_have_skills'] + requirements['good_to_have_skills']
 
-    st.subheader("🔎 Extracted JD Skills / Phrases")
-    st.write(", ".join(jd_skills[:40]) if jd_skills else "No skill phrases auto-extracted.")
+    st.subheader("🔎 JD Requirements Extracted")
+    st.write(f"**Role:** {requirements['role']}")
+    st.write("**Must-have skills:** "+", ".join(requirements['must_have_skills']))
+    st.write("**Good-to-have skills:** "+", ".join(requirements['good_to_have_skills']))
+    st.write("**Qualifications:** "+", ".join(requirements['qualifications']))
 
     # Evaluate each resume
     rows = []
-    global_skill_counter = {}
     for r in resumes:
-        # r might be path string or file-like
-        rname = r if isinstance(r, str) else r.name
-        rtext = read_pdf(r)
+        rname = r if isinstance(r,str) else r.name
+        rtext = read_pdf(r) if rname.lower().endswith(".pdf") else read_docx(r)
         score, verdict, color, matched, missing, details = score_resume(jd_skills, rtext, weights)
         feedback = generate_feedback(rname, score, matched, missing)
-
         rows.append({
             "Resume": rname,
             "Score": score,
@@ -82,33 +75,18 @@ if st.button("Evaluate ▶️"):
             "Feedback": feedback
         })
 
-        # aggregate skills counts
-        for s in matched:
-            global_skill_counter[s] = global_skill_counter.get(s, 0) + 1
-
     df = pd.DataFrame(rows).sort_values("Score", ascending=False).reset_index(drop=True)
 
-    # Summary stats + ranking
-    st.subheader("🏆 Summary & Ranking")
-    st.write("Top candidates by relevance score:")
+    st.subheader("🏆 Top Candidates")
     st.dataframe(df[["Resume","Score","Verdict"]])
 
-    # Bar chart of scores
     st.subheader("📊 Score Distribution")
-    chart_df = df.set_index("Resume")["Score"]
-    st.bar_chart(chart_df)
+    st.bar_chart(df.set_index("Resume")["Score"])
 
-
-    st.subheader("🧾 Detailed results")
+    st.subheader("🧾 Detailed Results")
     for idx, r in df.iterrows():
         st.markdown(f"### {r['Resume']} — {r['Score']}% — **{r['Verdict']}**")
         st.markdown(r["Feedback"])
         st.write("---")
 
-    # Download CSV
-    st.download_button("💾 Download full results CSV", df.to_csv(index=False).encode(), "results.csv", "text/csv")
-
-
-
-
-
+    st.download_button("💾 Download CSV", df.to_csv(index=False).encode(), "results.csv", "text/csv")
