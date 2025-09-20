@@ -1,55 +1,10 @@
-import streamlit as st
-
-def input_requirements(default_skills=None):
-    """
-    Let the hiring/placement team define the JD requirements:
-    - Job Title
-    - Must-have skills
-    - Good-to-have skills
-    - Qualifications
-    - Optional skill weights
-    Returns a dictionary of structured requirements.
-    """
-    st.sidebar.header("📋 Define Job Requirements")
-
-    # Job title
-    role_title = st.sidebar.text_input("Role / Position Title", value="")
-
-    # Must-have skills
-    must_have = st.sidebar.text_area(
-        "Must-Have Skills (comma-separated)", 
-        value=",".join(default_skills.get("must_have_skills", [])) if default_skills else ""
-    )
-    must_have_list = [s.strip() for s in must_have.split(",") if s.strip()]
-
-    # Good-to-have skills
-    good_to_have = st.sidebar.text_area(
-        "Good-to-Have Skills (comma-separated)", 
-        value=",".join(default_skills.get("good_to_have_skills", [])) if default_skills else ""
-    )
-    good_to_have_list = [s.strip() for s in good_to_have.split(",") if s.strip()]
-
-    # Qualifications
-    qualifications = st.sidebar.text_area(
-        "Qualifications / Degrees / Certifications (comma-separated)",
-        value=",".join(default_skills.get("qualifications", [])) if default_skills else ""
-    )
-    qualifications_list = [q.strip() for q in qualifications.split(",") if q.strip()]
-
-    # Optional: Skill weights
-    st.sidebar.markdown("### ⚖️ Optional Skill Weights")
-    weights = {}
-    all_skills = must_have_list + good_to_have_list
-    for skill in all_skills:
-        w = st.sidebar.number_input(
-            f"Weight for {skill}", min_value=0.0, max_value=5.0, value=1.0, step=0.1
-        )
-        weights[skill] = w
-
-    return {
-        "role_title": role_title,
-        "must_have_skills": must_have_list,
-        "good_to_have_skills": good_to_have_list,
-        "qualifications": qualifications_list,
-        "weights": weights
-    }
+def get_requirements():
+    return [
+        "streamlit",
+        "pandas",
+        "pdfplumber",
+        "python-docx",
+        "fuzzywuzzy",
+        "python-Levenshtein",
+        "matplotlib"
+    ]
