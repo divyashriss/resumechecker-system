@@ -50,7 +50,8 @@ def score_resume(keywords, resume_text, weights=None, freq_boost=True):
             missing.append(k)
 
     # avoid div by zero
-    score = round((achieved / total_weight) * 100, 2) if total_weight > 0 else 0.0
+    score = min(round((achieved / total_weight) * 100, 2), 100.0)
+
     if score >= 80:
         verdict, color = "High", "green"
     elif score >= 55:
@@ -63,4 +64,5 @@ def score_resume(keywords, resume_text, weights=None, freq_boost=True):
         "achieved_weight": round(achieved,2)
     }
     return score, verdict, color, matched, missing, details
+
 
