@@ -97,19 +97,6 @@ if st.button("Evaluate ▶️"):
     chart_df = df.set_index("Resume")["Score"]
     st.bar_chart(chart_df)
 
-    # Top skills across resumes
-    st.subheader("🔝 Top Matched Skills Across Resumes")
-    if global_skill_counter:
-        skill_df = pd.Series(global_skill_counter).sort_values(ascending=False).reset_index()
-        skill_df.columns = ["Skill","Count"]
-        st.table(skill_df.head(10))
-        # horizontal bar plot
-        fig, ax = plt.subplots(figsize=(8, max(2, len(skill_df.head(10))*0.4)))
-        ax.barh(skill_df.head(10)["Skill"][::-1], skill_df.head(10)["Count"][::-1])
-        ax.set_xlabel("Number of Resumes with this skill")
-        st.pyplot(fig)
-    else:
-        st.write("No matched skills across resumes.")
 
     st.subheader("🧾 Detailed results")
     for idx, r in df.iterrows():
@@ -119,3 +106,4 @@ if st.button("Evaluate ▶️"):
 
     # Download CSV
     st.download_button("💾 Download full results CSV", df.to_csv(index=False).encode(), "results.csv", "text/csv")
+
