@@ -7,7 +7,8 @@ from scorer import score_resume
 from feedback import generate_feedback
 import matplotlib.pyplot as plt
 import streamlit as st
-from utils import score_resume
+from folder_name.utils import score_resume
+
 
 st.title("Resume Checker 🔍")
 
@@ -139,6 +140,7 @@ if st.button("Evaluate ▶️"):
 
     # Download CSV
     st.download_button("💾 Download full results CSV", df.to_csv(index=False).encode(), "results.csv", "text/csv")
+
 
 
 
