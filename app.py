@@ -1,7 +1,7 @@
 import streamlit as st
+from parser import read_pdf
+from scorer import score_resume
 import pandas as pd
-from utils import read_pdf, score_resume
-
 
 st.title("Resume Relevance Checker 🚀")
 
@@ -9,6 +9,16 @@ st.title("Resume Relevance Checker 🚀")
 jd_file = st.file_uploader("Upload Job Description (PDF)", type=["pdf"])
 # Upload Resume PDFs
 resumes = st.file_uploader("Upload Resumes (PDF)", type=["pdf"], accept_multiple_files=True)
+
+# Define important skills with weights
+important_skills = {
+    "Python": 2,
+    "SQL": 2,
+    "Power BI": 1.5,
+    "Pandas": 1.5,
+    "Machine Learning": 2,
+    "NLP": 2
+}
 
 if st.button("Evaluate ▶️"):
     if not jd_file:
@@ -21,7 +31,7 @@ if st.button("Evaluate ▶️"):
     # Extract text from JD
     jd_text = read_pdf(jd_file)
 
-    # Simple keyword extraction: top 10 unique words >2 letters
+    # Extract top 10 keywords from JD
     words = [w.lower() for w in jd_text.split() if len(w) > 2]
     keywords = list(dict.fromkeys(words))[:10]
     st.write("Keywords for evaluation:", ", ".join(keywords))
@@ -29,7 +39,7 @@ if st.button("Evaluate ▶️"):
     results = []
     for r in resumes:
         resume_text = read_pdf(r)
-        score, verdict, matched, missing = score_resume(keywords, resume_text)
+        score, verdict, color, matched, missing = score_resume(keywords, resume_text, important_skills)
         results.append({
             "Resume": r.name,
             "Score": score,
@@ -39,7 +49,5 @@ if st.button("Evaluate ▶️"):
         })
 
     df = pd.DataFrame(results)
-    st.dataframe(df)
+    st.dataframe(df.style.applymap(lambda x: f'color: {color}', subset=['Verdict']))
     st.download_button("Download CSV", df.to_csv(index=False).encode(), "results.csv", "text/csv")
-`
-
