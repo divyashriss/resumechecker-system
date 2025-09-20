@@ -8,7 +8,7 @@ from feedback import generate_feedback
 import matplotlib.pyplot as plt
 
 st.set_page_config(page_title="Resume Relevance - Pro", layout="wide")
-st.title("🚀 Resume Relevance Checker — Pro Edition")
+st.title("🚀 Resume Relevance Checker")
 
 # --- UI: choose mode ---
 mode = st.radio("Mode", ["Upload JD & Resumes", "Auto-scan sample_data (local)"])
@@ -106,4 +106,5 @@ if st.button("Evaluate ▶️"):
 
     # Download CSV
     st.download_button("💾 Download full results CSV", df.to_csv(index=False).encode(), "results.csv", "text/csv")
+
 
