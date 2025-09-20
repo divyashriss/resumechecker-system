@@ -6,6 +6,39 @@ from extractor import read_pdf, extract_skills, clean_text, SKILL_SET
 from scorer import score_resume
 from feedback import generate_feedback
 import matplotlib.pyplot as plt
+import streamlit as st
+from utils import score_resume
+
+st.title("Resume Checker 🔍")
+
+# Hiring person inputs requirements
+st.subheader("Enter Job Requirements / Skills")
+jd_input = st.text_area(
+    "Paste job description or required skills here:",
+    placeholder="e.g. Python, SQL, Machine Learning, Communication, AWS"
+)
+
+# Convert JD input into keyword list
+keywords = [k.strip() for k in jd_input.split(",") if k.strip()]
+
+# Resume input
+resume_text = st.text_area("Paste Resume Text", height=250)
+
+if st.button("Check Resume"):
+    if not keywords:
+        st.warning("⚠️ Please enter at least one requirement/skill.")
+    elif not resume_text.strip():
+        st.warning("⚠️ Please paste the resume text.")
+    else:
+        # Run scoring
+        score, verdict, color, matched, missing, details = score_resume(keywords, resume_text)
+
+        st.markdown(f"### Final Score: *{score}%*")
+        st.markdown(f"Verdict: <span style='color:{color}'>{verdict}</span>", unsafe_allow_html=True)
+
+        st.write("✅ Matched Skills:", matched)
+        st.write("❌ Missing Skills:", missing)
+        st.write("📊 Details:", details)
 
 st.set_page_config(page_title="Resume Relevance - Pro", layout="wide")
 st.title("🚀 Resume Relevance Checker")
@@ -106,5 +139,6 @@ if st.button("Evaluate ▶️"):
 
     # Download CSV
     st.download_button("💾 Download full results CSV", df.to_csv(index=False).encode(), "results.csv", "text/csv")
+
 
 
