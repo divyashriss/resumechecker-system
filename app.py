@@ -5,7 +5,7 @@ from extractor import read_pdf, read_docx, extract_skills, clean_text, SKILL_SET
 from parser import parse_jd
 from scorer import score_resume
 from feedback import generate_feedback
-from requirement import get_requirements
+from requirements import get_requirements
 
 st.set_page_config(page_title="Resume Relevance Checker", layout="wide")
 st.title("🚀 Resume Relevance Checker - Placement Dashboard")
@@ -90,3 +90,4 @@ if st.button("Evaluate ▶️"):
         st.write("---")
 
     st.download_button("💾 Download CSV", df.to_csv(index=False).encode(), "results.csv", "text/csv")
+
